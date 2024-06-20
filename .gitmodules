@@ -1,0 +1,3 @@
+[submodule "sw/picowota"]
+	path = sw/picowota
+	url = https://github.com/usedbytes/picowota

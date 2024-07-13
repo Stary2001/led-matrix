@@ -34,11 +34,7 @@ static inline uint32_t gamma_correct_565_888(uint16_t pix) {
     return (b_gamma >> 2 << 16) | (g_gamma >> 14 << 8) | (r_gamma >> 24 << 0);
 }
 
-int main() {
-    stdio_init_all();
-
-    set_sys_clock_khz(250000, false);
-
+void do_hub75() {
     PIO pio = pio0;
     uint sm_data = 0;
     uint sm_row = 1;

@@ -11,7 +11,7 @@
 #include "hardware/pio.h"
 #include "hub75.pio.h"
 
-#include "mountains_128x64_rgb565.h"
+//#include "mountains_128x64_rgb565.h"
 
 #define DATA_BASE_PIN 0
 #define DATA_N_PINS 6
@@ -22,7 +22,8 @@
 #define OEN_PIN 13
 
 #define WIDTH 128
-#define HEIGHT 64
+#define PANEL_HEIGHT 64
+#define HEIGHT 128
 
 static inline uint32_t gamma_correct_565_888(uint16_t pix) {
     uint32_t r_gamma = pix & 0xf800u;
@@ -34,6 +35,8 @@ static inline uint32_t gamma_correct_565_888(uint16_t pix) {
     return (b_gamma >> 2 << 16) | (g_gamma >> 14 << 8) | (r_gamma >> 24 << 0);
 }
 
+uint16_t framebuffer[WIDTH*HEIGHT] = {};
+
 void do_hub75() {
     PIO pio = pio0;
     uint sm_data = 0;
@@ -44,15 +47,22 @@ void do_hub75() {
     hub75_data_rgb888_program_init(pio, sm_data, data_prog_offs, DATA_BASE_PIN, CLK_PIN);
     hub75_row_program_init(pio, sm_row, row_prog_offs, ROWSEL_BASE_PIN, ROWSEL_N_PINS, STROBE_PIN);
 
-    static uint32_t gc_row[2][WIDTH];
-    const uint16_t *img = (const uint16_t*)mountains_128x64;
+    static uint32_t gc_row[4][WIDTH];
+    const uint16_t *img = framebuffer;
 
     while (1) {
         for (int rowsel = 0; rowsel < (1 << ROWSEL_N_PINS); ++rowsel) {
+
             for (int x = 0; x < WIDTH; ++x) {
+                int xx = (WIDTH - 1) - x;
                 gc_row[0][x] = gamma_correct_565_888(img[rowsel * WIDTH + x]);
                 gc_row[1][x] = gamma_correct_565_888(img[((1u << ROWSEL_N_PINS) + rowsel) * WIDTH + x]);
+
+                /* Flip in x and y */
+                gc_row[2][x] = gamma_correct_565_888(img[(HEIGHT - 1- rowsel) * WIDTH + xx]);
+                gc_row[3][x] = gamma_correct_565_888(img[(HEIGHT - 1 - (1u << ROWSEL_N_PINS) - rowsel) * WIDTH + xx]);
             }
+            
             for (int bit = 0; bit < 8; ++bit) {
                 hub75_data_rgb888_set_shift(pio, sm_data, data_prog_offs, bit);
                 for (int x = 0; x < WIDTH; ++x) {
@@ -60,8 +70,8 @@ void do_hub75() {
                     pio_sm_put_blocking(pio, sm_data, gc_row[1][x]);
                 }
                 for (int x = 0; x < WIDTH; ++x) {
-                    pio_sm_put_blocking(pio, sm_data, gc_row[0][x]);
-                    pio_sm_put_blocking(pio, sm_data, gc_row[1][x]);
+                    pio_sm_put_blocking(pio, sm_data, gc_row[2][x]);
+                    pio_sm_put_blocking(pio, sm_data, gc_row[3][x]);
                 }
                 // Dummy pixel per lane
                 pio_sm_put_blocking(pio, sm_data, 0);

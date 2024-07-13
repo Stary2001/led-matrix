@@ -54,7 +54,7 @@ target_compile_definitions(pio_hub75 PRIVATE
 	PICO_DEFAULT_UART_RX_PIN=29
 )
 
-target_link_libraries(pio_hub75 PRIVATE pico_stdlib hardware_pio pico_multicore pico_cyw43_arch_lwip_sys_freertos FreeRTOS-Kernel-Heap4)
+target_link_libraries(pio_hub75 PRIVATE pico_stdlib hardware_pio pico_multicore pico_cyw43_arch_lwip_sys_freertos FreeRTOS-Kernel-Heap4 picowota_reboot)
 pico_add_extra_outputs(pio_hub75)
 
 picowota_build_combined(pio_hub75)

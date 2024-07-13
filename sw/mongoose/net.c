@@ -2,7 +2,7 @@
 // All rights reserved
 
 #include "net.h"
-
+#include "picowota/reboot.h"
 // Authenticated user.
 // A user can be authenticated by:
 //   - a name:pass pair, passed in a header Authorization: Basic .....
@@ -239,6 +239,8 @@ static void handle_device_eraselast(struct mg_connection *c) {
   mg_http_reply(c, 200, s_json_header, "true\n");
 }
 
+extern bool should_do_ota;
+
 // HTTP request handler function
 static void fn(struct mg_connection *c, int ev, void *ev_data) {
   if (ev == MG_EV_ACCEPT) {
@@ -252,34 +254,9 @@ static void fn(struct mg_connection *c, int ev, void *ev_data) {
     struct mg_http_message *hm = (struct mg_http_message *) ev_data;
     struct user *u = authenticate(hm);
 
-    if (mg_match(hm->uri, mg_str("/api/#"), NULL) && u == NULL) {
-      mg_http_reply(c, 403, "", "Not Authorised\n");
-    } else if (mg_match(hm->uri, mg_str("/api/login"), NULL)) {
-      handle_login(c, u);
-    } else if (mg_match(hm->uri, mg_str("/api/logout"), NULL)) {
-      handle_logout(c);
-    } else if (mg_match(hm->uri, mg_str("/api/debug"), NULL)) {
-      handle_debug(c, hm);
-    } else if (mg_match(hm->uri, mg_str("/api/stats/get"), NULL)) {
-      handle_stats_get(c);
-    } else if (mg_match(hm->uri, mg_str("/api/events/get"), NULL)) {
-      handle_events_get(c, hm);
-    } else if (mg_match(hm->uri, mg_str("/api/settings/get"), NULL)) {
-      handle_settings_get(c);
-    } else if (mg_match(hm->uri, mg_str("/api/settings/set"), NULL)) {
-      handle_settings_set(c, hm->body);
-    } else if (mg_match(hm->uri, mg_str("/api/firmware/upload"), NULL)) {
-      handle_firmware_upload(c, hm);
-    } else if (mg_match(hm->uri, mg_str("/api/firmware/commit"), NULL)) {
-      handle_firmware_commit(c);
-    } else if (mg_match(hm->uri, mg_str("/api/firmware/rollback"), NULL)) {
-      handle_firmware_rollback(c);
-    } else if (mg_match(hm->uri, mg_str("/api/firmware/status"), NULL)) {
-      handle_firmware_status(c);
-    } else if (mg_match(hm->uri, mg_str("/api/device/reset"), NULL)) {
-      handle_device_reset(c);
-    } else if (mg_match(hm->uri, mg_str("/api/device/eraselast"), NULL)) {
-      handle_device_eraselast(c);
+    if (mg_match(hm->uri, mg_str("/ota"), NULL)) {
+      mg_http_reply(c, 200, "", "ok\n");
+      should_do_ota = true;
     } else {
       struct mg_http_serve_opts opts;
       memset(&opts, 0, sizeof(opts));

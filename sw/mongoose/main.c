@@ -10,6 +10,7 @@
 #include "task.h"
 #include "mongoose.h"
 #include "net.h"
+#include "panel.h"
 
 #include "picowota/reboot.h"
 
@@ -45,15 +46,63 @@ void main_task(__unused void *params) {
     cyw43_arch_deinit();
 }
 
-extern uint16_t framebuffer[];
+
+#include "../font8x8_basic.h"
+panel_message current_message = {.type = MESSAGE_NONE, .text_message={}};
+
+void clear_framebuffer() {
+    memset(framebuffer, 0, WIDTH * HEIGHT * 2);
+}
+
+void draw_char(char chr, size_t xx, size_t yy) {
+    for(int y = 0; y < 8; y++) {
+        for(int x = 0; x < 8; x++) {
+            if(font8x8_basic[chr][y] & (1<<x)) {
+                framebuffer[(yy + y) * WIDTH + xx + x] = 0xffff;
+            } else {
+                framebuffer[(yy + y) * WIDTH + xx + x] = 0;
+            }
+        }
+    }
+}
 
 void panel_task() {
     int i = 0;
     while(true) {
-        if(i < 128*128) { 
-            framebuffer[i++] = 0xffff;
+        if(current_message.type != MESSAGE_NONE) {
+            switch(current_message.type) {
+                case MESSAGE_TEXT:
+                {
+                    panel_text_message *text_message = &current_message.text_message;
+                    if(text_message->clear) {
+                        clear_framebuffer();
+                    }
+
+                    size_t len = strlen(text_message->message);
+                    size_t xx = 0;
+                    size_t yy = 0;
+
+                    for(size_t i = 0; i < len; i++) {
+                        draw_char(text_message->message[i], xx, yy);
+                        xx += 8;
+                        if(xx == 128) {
+                            xx = 0;
+                            yy += 8;
+                        }
+                        vTaskDelay(100/portTICK_PERIOD_MS);
+                    }
+                    vTaskDelay(1000/portTICK_PERIOD_MS);
+
+                    current_message.type = MESSAGE_NONE;
+                }
+                break;
+
+                default:
+                // idk
+                break;
+            }
         }
-        vTaskDelay(1/portTICK_PERIOD_MS);
+        vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 }
 

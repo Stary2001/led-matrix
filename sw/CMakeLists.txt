@@ -1,18 +1,21 @@
 cmake_minimum_required(VERSION 3.12)
+
+set(PICO_BOARD pico_w)
 include(pico_sdk_import.cmake)
 
 project(led_matrix C CXX ASM)
 
 # Initialize the SDK
-set(PICO_BOARD pico_w)
 pico_sdk_init()
+
+set(PICOWOTA_WIFI_SSID why-fi)
+set(PICOWOTA_WIFI_PASS correcthorsebatterystaple)
 
 add_subdirectory(picowota)
 set(FREERTOS_KERNEL_PATH ../FreeRTOS-Kernel)
 include(FreeRTOS_Kernel_import.cmake)
 
 add_executable(pio_hub75)
-
 
 function(picowota_retrieve_variable name hidden)
 	if (DEFINED ENV{${name}} AND (NOT ${name}))
@@ -58,3 +61,5 @@ target_link_libraries(pio_hub75 PRIVATE pico_stdlib hardware_pio pico_multicore 
 pico_add_extra_outputs(pio_hub75)
 
 picowota_build_combined(pio_hub75)
+
+add_custom_target(ota COMMAND curl http://192.168.1.130/ota\; make\; sleep 5\; serial-flash tcp:192.168.1.130:4242 pio_hub75.elf)

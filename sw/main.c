@@ -8,6 +8,9 @@
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
+#include "hardware/clocks.h"
+
+
 extern void do_hub75();
 extern void vLaunch();
 
